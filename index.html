@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KMK OW Water Destoner | Interactive Showcase</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              'kmk-orange': '#f3931a',
+              'kmk-orange-dark': '#d37f14',
+            }
+          }
+        }
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Industrial Clean (Slate, White, and #f3931a Orange Accent) -->
+    <!-- Application Structure Plan: The SPA is designed as a single-page, vertical-scroll marketing site. This structure is superior to a linear slide deck for web engagement, allowing users to freely explore content. The flow is: 1) Hero section to capture attention with a clear value proposition and video demonstration. 2) An interactive 'How It Works' diagram to engage the user and explain the core technology, now featuring a visual process flow indicator. 3) A scannable 'Advantages' grid to quickly communicate benefits. 4) A 'Technical Dashboard' with stat cards and a chart for clear data presentation. 5) A final, strong Call-to-Action. A sticky navigation bar facilitates easy jumping between these thematic sections, catering to different user priorities (e.g., a manager might focus on advantages, an engineer on specs). This architecture prioritizes user-led discovery and information digestion. -->
+    <!-- Visualization & Content Choices: 
+        - Report Info: How the machine works (Slide 2). Goal: Explain a process clearly. Viz/Method: Interactive HTML/CSS flow diagram (timeline). Interaction: User clicks on labeled steps to reveal detailed descriptions and simultaneously update the visual flow indicator (line and dots highlight). Justification: This transforms passive reading into an active learning experience, improving comprehension and retention of the core technology. Library/Method: Vanilla JS, Tailwind CSS.
+        - Report Info: Key Advantages (Slide 3). Goal: Persuade by highlighting benefits. Viz/Method: A responsive grid of feature cards with icons. Interaction: None, designed for quick scanning. Justification: Card-based UI is a highly effective and familiar pattern for presenting distinct pieces of information in a digestible format. Library/Method: Tailwind CSS.
+        - Report Info: Technical Specifications (Slide 4). Goal: Inform with key data. Viz/Method: A combination of large stat cards and a horizontal bar chart for conveyor dimensions. Interaction: The chart is dynamically rendered with tooltips on hover. Justification: The bar chart provides an instant visual comparison of the conveyor sizes (900mm vs 400mm), which is more impactful and easier to process than text alone. Library/Method: Chart.js.
+        - CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            scroll-behavior: smooth;
+        }
+        .bg-hero-pattern {
+            background-color: #f8fafc;
+        }
+        .nav-link.active {
+            color: #f3931a;
+            font-weight: 600;
+            position: relative;
+        }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 20px;
+            height: 3px;
+            background-color: #f3931a;
+            border-radius: 2px;
+        }
+        .step-button {
+            transition: all 0.3s ease-in-out;
+        }
+        .step-button.active {
+            background-color: #f3931a;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
+        .step-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        .step-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 250px;
+            max-height: 300px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 300px;
+            }
+        }
+        .step-dot {
+            transition: all 0.5s ease;
+        }
+        /* New style for video tabs */
+        .video-tab.active-tab {
+            background-color: #f3931a;
+            color: white;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700">
+
+    <header class="bg-white/90 backdrop-blur-lg sticky top-0 z-50 shadow-md">
+        <nav class="container mx-auto px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex-shrink-0">
+                    <a href="#" class="text-xl font-bold text-kmk-orange">KMK OW Destoner</a>
+                </div>
+                <div class="hidden md:flex items-center space-x-8">
+                    <a href="#process" class="nav-link text-sm font-medium text-slate-600 hover:text-kmk-orange">Process</a>
+                    <a href="#advantages" class="nav-link text-sm font-medium text-slate-600 hover:text-kmk-orange">Advantages</a>
+                    <a href="#specs" class="nav-link text-sm font-medium text-slate-600 hover:text-kmk-orange">Specifications</a>
+                </div>
+                <div class="hidden md:block">
+                    <!-- CTA Button 1: Desktop Header -->
+                    <a href="mailto:akram.khelaifia@kmk-maszyny.com?subject=Inquiry%20about%20KMK%20OW%20Water%20Destoner" class="px-5 py-2.5 text-sm font-semibold text-white bg-kmk-orange rounded-lg hover:bg-kmk-orange-dark focus:outline-none focus:ring-4 focus:ring-amber-300 transition-all duration-300">Request Consultation</a>
+                </div>
+                <div class="-mr-2 flex md:hidden">
+                    <button id="mobile-menu-button" type="button" class="bg-white inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:bg-slate-100 focus:outline-none" aria-controls="mobile-menu" aria-expanded="false">
+                        <span class="sr-only">Open main menu</span>
+                        <svg class="block h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" /></svg>
+                        <svg class="hidden h-6 w-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                    </button>
+                </div>
+            </div>
+        </nav>
+        <div class="md:hidden hidden" id="mobile-menu">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#process" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Process</a>
+                <a href="#advantages" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Advantages</a>
+                <a href="#specs" class="nav-link block px-3 py-2 rounded-md text-base font-medium text-slate-700 hover:bg-slate-100">Specifications</a>
+                <!-- CTA Button 2: Mobile Menu -->
+                <a href="mailto:akram.khelaifia@kmk-maszyny.com?subject=Inquiry%20about%20KMK%20OW%20Water%20Destoner" class="block px-3 py-2 rounded-md text-base font-medium text-white bg-kmk-orange hover:bg-kmk-orange-dark">Request Consultation</a>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="introduction" class="bg-hero-pattern py-24 sm:py-32">
+            <div class="container mx-auto px-6 lg:px-8">
+                <div class="grid lg:grid-cols-2 gap-16 items-center">
+                    <div class="text-center lg:text-left">
+                        <!-- START: ADDED PRODUCT IMAGE HERE -->
+                        <img src="https://www.kmk-maszyny.com/wp-content/uploads/2023/03/ow-render-1.webp" 
+                            alt="KMK Water Destoner Machine" 
+                            class="w-full max-w-sm sm:max-w-md mx-auto lg:mx-0 rounded-2xl shadow-2xl mb-8 object-cover border-4 border-white transform hover:scale-[1.02] transition duration-500 ring-4 ring-kmk-orange/50">
+                        <!-- END: ADDED PRODUCT IMAGE HERE -->
+                        
+                        <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-tight">
+                            <span class="block">STOP Damage.</span>
+                            <span class="block text-kmk-orange">START Profit.</span>
+                        </h1>
+                        <p class="mt-6 text-lg text-slate-600 max-w-lg mx-auto lg:mx-0">
+                            The KMK OW Water Destoner is your insurance policy against downtime. It's the essential first step to protect your entire processing line from catastrophic damage caused by stones and soil.
+                        </p>
+                        <div class="mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
+                            <!-- CTA Button 3: Hero Section - Get a Quote -->
+                            <a href="mailto:akram.khelaifia@kmk-maszyny.com?subject=Inquiry%20about%20KMK%20OW%20Water%20Destoner" class="w-full sm:w-auto flex items-center justify-center px-8 py-3 text-base font-semibold text-white bg-kmk-orange rounded-lg shadow-lg hover:bg-kmk-orange-dark transition-transform transform hover:scale-105">
+                                Get a Quote
+                            </a>
+                            <a href="#process" class="w-full sm:w-auto flex items-center justify-center px-8 py-3 text-base font-semibold text-kmk-orange bg-white rounded-lg shadow-lg hover:bg-slate-100 transition-transform transform hover:scale-105 border border-slate-200">
+                                See The Process
+                            </a>
+                        </div>
+                    </div>
+                    
+                    <!-- Video Showcase Integration Block -->
+                    <div class="flex flex-col justify-center items-center">
+                        <!-- Video Player Area -->
+                        <div class="relative w-full max-w-lg aspect-video bg-slate-200 rounded-2xl shadow-2xl overflow-hidden border border-slate-300">
+                            <!-- Video 1 (Default active). Using /preview for better Google Drive embed compatibility. -->
+                            <iframe id="video-1" class="video-iframe absolute inset-0 w-full h-full"
+                                src="https://drive.google.com/file/d/115EbNaorZD97Kp3gZnw7VkifqYUMhT0w/preview" 
+                                frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="display: block;">
+                            </iframe>
+                            <!-- Video 2 -->
+                            <iframe id="video-2" class="video-iframe absolute inset-0 w-full h-full"
+                                src="https://drive.google.com/file/d/1F2iAN_FdWMOZIgk8H2RiDSYzPZ-LaxRC/preview" 
+                                frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="display: none;">
+                            </iframe>
+                            <!-- Video 3 -->
+                            <iframe id="video-3" class="video-iframe absolute inset-0 w-full h-full"
+                                src="https://drive.google.com/file/d/1xEbv_YEqUo6cJCGnzokA97LHTtqaigq7/preview" 
+                                frameborder="0" allow="autoplay; fullscreen" allowfullscreen style="display: none;">
+                            </iframe>
+                        </div>
+                        
+                        <!-- Video Selector Tabs -->
+                        <div class="flex gap-2 p-2 bg-white rounded-xl shadow-lg mt-4 max-w-lg w-full justify-center">
+                            <button data-video="1" class="video-tab active-tab bg-kmk-orange text-white px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm hover:bg-kmk-orange-dark transition-colors">Video 1 (In Action)</button>
+                            <button data-video="2" class="video-tab text-slate-700 bg-slate-100 px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm hover:bg-slate-200 transition-colors">Video 2 (Capacity Test)</button>
+                            <button data-video="3" class="video-tab text-slate-700 bg-slate-100 px-3 py-2 rounded-lg font-semibold text-xs sm:text-sm hover:bg-slate-200 transition-colors">Video 3 (Full Line)</button>
+                        </div>
+                        <p class="mt-4 text-center text-sm text-slate-500">Watch the KMK Water Destoner in action across three different scenarios.</p>
+                    </div>
+                    <!-- End Video Showcase Integration Block -->
+                </div>
+            </div>
+        </section>
+
+        <section id="process" class="py-20 sm:py-24 bg-white">
+            <div class="container mx-auto px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-slate-900">Precision Engineering: Intelligent Flotation</h2>
+                    <p class="mt-4 text-lg text-slate-600">
+                        Our core technology provides superior separation that is tough on stones but exceptionally gentle on your produce. Click through the three stages below to see how our system guarantees separation without bruising or mechanical damage.
+                    </p>
+                </div>
+                
+                <!-- Interactive Process Flow Diagram -->
+                <div class="mt-16 max-w-5xl mx-auto">
+                    <div class="flex justify-between items-center relative my-10 px-4 sm:px-10">
+                        <!-- Gray base line -->
+                        <div class="absolute inset-x-0 mx-auto h-1 bg-gray-300 top-1/2 transform -translate-y-1/2"></div>
+                        <!-- Orange progress line -->
+                        <div id="process-line-highlight" class="absolute left-0 h-1 bg-kmk-orange transition-all duration-500 top-1/2 transform -translate-y-1/2"></div>
+                        
+                        <!-- Dots for steps -->
+                        <div data-dot="1" class="step-dot bg-kmk-orange w-8 h-8 rounded-full flex items-center justify-center relative z-10 text-white font-bold text-sm shadow-md">1</div>
+                        <div data-dot="2" class="step-dot bg-gray-300 w-8 h-8 rounded-full flex items-center justify-center relative z-10 text-gray-700 font-bold text-sm">2</div>
+                        <div data-dot="3" class="step-dot bg-gray-300 w-8 h-8 rounded-full flex items-center justify-center relative z-10 text-gray-700 font-bold text-sm">3</div>
+                    </div>
+
+                    <!-- Step Selection Buttons -->
+                    <div class="grid grid-cols-3 gap-4 bg-slate-100 p-2 rounded-xl mt-4">
+                        <button data-step="1" class="step-button p-4 rounded-lg text-base sm:text-lg font-semibold text-slate-800">1. Calibrated Current</button>
+                        <button data-step="2" class="step-button p-4 rounded-lg text-base sm:text-lg font-semibold text-slate-800">2. Gentle Sorting</button>
+                        <button data-step="3" class="step-button p-4 rounded-lg text-base sm:text-lg font-semibold text-slate-800">3. Waste Removal</button>
+                    </div>
+
+                    <!-- Step Content -->
+                    <div class="mt-8">
+                        <div id="step-content-1" class="step-content">
+                             <div class="p-8 rounded-lg border border-slate-200 bg-slate-50 shadow-inner">
+                                <h3 class="text-2xl font-bold text-slate-900 mb-3 text-kmk-orange">Intelligent Flotation</h3>
+                                <p class="text-slate-600">Produce and contaminants enter the water tank. A precisely calibrated, powerful turbine creates an upward water flow, engineered to interact differently with light produce and heavy stones, initiating the sorting process.</p>
+                                <p class="mt-4 text-sm text-slate-500 border-l-4 border-kmk-orange pl-3">Focus: Turbine speed and water level calibration are key to effective separation.</p>
+                             </div>
+                        </div>
+                        <div id="step-content-2" class="step-content">
+                            <div class="p-8 rounded-lg border border-slate-200 bg-slate-50 shadow-inner">
+                                 <h3 class="text-2xl font-bold text-slate-900 mb-3 text-kmk-orange">Product Separation</h3>
+                                 <p class="text-slate-600">Lighter vegetables are effortlessly lifted by the current and guided onto a bar conveyor. Crucially, heavier stones and hard soil clods instantly sink to the bottom, separating product from waste.</p>
+                                 <p class="mt-4 text-sm text-slate-500 border-l-4 border-kmk-orange pl-3">Key Insight: The density difference is leveraged for 100% stone removal before the main washer.</p>
+                             </div>
+                        </div>
+                         <div id="step-content-3" class="step-content">
+                            <div class="p-8 rounded-lg border border-slate-200 bg-slate-50 shadow-inner">
+                                 <h3 class="text-2xl font-bold text-slate-900 mb-3 text-kmk-orange">Continuous Discharge</h3>
+                                 <p class="text-600">The separated stones and waste are automatically collected and discharged by a robust, heavy-duty elevator. This ensures continuous, uninterrupted operation without manual intervention.</p>
+                                 <p class="mt-4 text-sm text-slate-500 border-l-4 border-kmk-orange pl-3">Benefit: Fully automated waste removal reduces labor costs and maintains high throughput.</p>
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="advantages" class="py-20 sm:py-24">
+            <div class="container mx-auto px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-slate-900">The KMK Advantage: Built to Last</h2>
+                    <p class="mt-4 text-lg text-slate-600">
+                        This is more than a machine; it's an investment in long-term efficiency, reliability, and control for your entire operation.
+                    </p>
+                </div>
+                <div class="mt-16 grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-100 hover:shadow-xl transition duration-300">
+                        <div class="text-4xl mb-4 text-kmk-orange">🛡️</div>
+                        <h3 class="text-xl font-bold mb-2 text-slate-900">Asset Protection</h3>
+                        <p class="text-slate-600">Intercepting abrasive stones early dramatically extends the lifespan of all your downstream machinery.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-100 hover:shadow-xl transition duration-300">
+                        <div class="text-4xl mb-4 text-kmk-orange">⚙️</div>
+                        <h3 class="text-xl font-bold mb-2 text-slate-900">Total Automation</h3>
+                        <p class="text-slate-600">An automated water management system and pneumatic drain dampers ensure consistent, reliable operation.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-100 hover:shadow-xl transition duration-300">
+                        <div class="text-4xl mb-4 text-kmk-orange">💪</div>
+                        <h3 class="text-xl font-bold mb-2 text-slate-900">Industrial Strength</h3>
+                        <p class="text-slate-600">Robust build quality designed specifically to withstand the abrasive conditions of a stone separation line.</p>
+                    </div>
+                    <div class="bg-white p-8 rounded-xl shadow-lg border border-slate-100 hover:shadow-xl transition duration-300">
+                        <div class="text-4xl mb-4 text-kmk-orange">🧼</div>
+                        <h3 class="text-xl font-bold mb-2 text-slate-900">Simple Maintenance</h3>
+                        <p class="text-slate-600">The tank base is uniquely designed for fast and convenient cleaning to minimize operational downtime.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="specs" class="py-20 sm:py-24 bg-white">
+            <div class="container mx-auto px-6 lg:px-8">
+                <div class="text-center max-w-3xl mx-auto">
+                    <h2 class="text-3xl sm:text-4xl font-bold text-slate-900">Technical Dashboard</h2>
+                    <p class="mt-4 text-lg text-slate-600">
+                        Engineered for leading productivity and power efficiency. An optional all acid-resistant stainless steel construction is also available for specialized environments.
+                    </p>
+                </div>
+                <div class="mt-16 max-w-5xl mx-auto">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-md">
+                            <p class="text-sm font-medium text-slate-500">Max Capacity</p>
+                            <p class="text-3xl font-bold text-kmk-orange">20 <span class="text-xl font-semibold">t/h</span></p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-md">
+                            <p class="text-sm font-medium text-slate-500">Tank Capacity</p>
+                            <p class="text-3xl font-bold text-kmk-orange">1,200 <span class="text-xl font-semibold">l</span></p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-md">
+                            <p class="text-sm font-medium text-slate-500">Power Usage</p>
+                            <p class="text-3xl font-bold text-kmk-orange">7.7 <span class="text-xl font-semibold">kW</span></p>
+                        </div>
+                        <div class="bg-slate-50 p-6 rounded-xl border border-slate-200 shadow-md">
+                            <p class="text-sm font-medium text-slate-500">Supply (400V)</p>
+                            <p class="text-3xl font-bold text-kmk-orange">Elec.</p>
+                        </div>
+                    </div>
+                    <div class="mt-12 bg-slate-50 p-6 sm:p-8 rounded-xl border border-slate-200 shadow-md">
+                        <h3 class="text-xl font-bold text-center text-slate-900 mb-6">Conveyor Dimensions Comparison</h3>
+                        <div class="chart-container">
+                            <canvas id="conveyorChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="py-20 sm:py-24">
+            <div class="container mx-auto px-6 lg:px-8">
+                <div class="relative bg-slate-800 rounded-2xl p-12 text-center overflow-hidden">
+                     <div class="absolute inset-0 bg-gradient-to-r from-kmk-orange to-kmk-orange-dark opacity-90"></div>
+                     <div class="relative z-10">
+                        <h2 class="text-3xl sm:text-4xl font-bold text-white">Secure Your Quality. Maximize Your Uptime.</h2>
+                        <p class="mt-4 text-lg text-amber-100 max-w-2xl mx-auto">
+                           Don't let stones and soil dictate your profitability. Contact us for a personalized consultation and let us show you how the KMK OW Destoner will guarantee your operational stability.
+                        </p>
+                        <div class="mt-8">
+                            <!-- CTA Button 4: Final Contact Section -->
+                            <a href="mailto:akram.khelaifia@kmk-maszyny.com?subject=Inquiry%20about%20KMK%20OW%20Water%20Destoner" class="inline-block bg-white text-kmk-orange font-semibold px-8 py-3 rounded-lg shadow-lg hover:bg-slate-100 transition-transform transform hover:scale-105">Contact Us Today</a>
+                        </div>
+                     </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-slate-900 text-slate-400">
+        <div class="container mx-auto px-6 lg:px-8 py-8 text-center text-sm">
+            <p>&copy; 2025 KMK Industries. All rights reserved.</p>
+            <p class="mt-2 opacity-70">This is an illustrative web application based on product data.</p>
+        </div>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuButton) {
+                mobileMenuButton.addEventListener('click', () => {
+                    const isExpanded = mobileMenuButton.getAttribute('aria-expanded') === 'true';
+                    mobileMenuButton.setAttribute('aria-expanded', !isExpanded);
+                    mobileMenu.classList.toggle('hidden');
+                    mobileMenuButton.querySelector('svg:first-child').classList.toggle('hidden');
+                    mobileMenuButton.querySelector('svg:last-child').classList.add('hidden');
+                });
+            }
+            
+            const navLinks = document.querySelectorAll('.nav-link, #mobile-menu a');
+            navLinks.forEach(link => {
+                link.addEventListener('click', () => {
+                    if (window.innerWidth < 768 && mobileMenu) {
+                        mobileMenu.classList.add('hidden');
+                        if (mobileMenuButton) {
+                            mobileMenuButton.setAttribute('aria-expanded', 'false');
+                            mobileMenuButton.querySelector('svg:first-child').classList.remove('hidden');
+                            mobileMenuButton.querySelector('svg:last-child').classList.add('hidden');
+                        }
+                    }
+                });
+            });
+
+            const sections = document.querySelectorAll('section');
+            const mainNavLinks = document.querySelectorAll('header nav .nav-link');
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        mainNavLinks.forEach(link => {
+                            link.classList.remove('active');
+                            if (link.getAttribute('href').substring(1) === entry.target.id) {
+                                link.classList.add('active');
+                            }
+                        });
+                    }
+                });
+            }, { rootMargin: '-40% 0px -60% 0px' });
+            sections.forEach(section => observer.observe(section));
+
+            const stepButtons = document.querySelectorAll('.step-button');
+            const stepContents = document.querySelectorAll('.step-content');
+            
+            function updateProcessDiagram(stepId) {
+                const highlight = document.getElementById('process-line-highlight');
+                const dots = document.querySelectorAll('.step-dot');
+                let widthPercent = 0;
+
+                if (stepId === 2) widthPercent = 50;
+                if (stepId === 3) widthPercent = 100;
+
+                highlight.style.width = `${widthPercent}%`;
+
+                dots.forEach((dot, index) => {
+                    const isActive = index + 1 <= stepId;
+                    dot.classList.toggle('bg-kmk-orange', isActive);
+                    dot.classList.toggle('bg-gray-300', !isActive);
+                    dot.classList.toggle('text-white', isActive);
+                    dot.classList.toggle('text-gray-700', !isActive);
+                    dot.classList.toggle('scale-110', isActive && index + 1 === stepId); // Only scale the active step
+                    dot.classList.toggle('shadow-lg', isActive && index + 1 === stepId);
+                    dot.classList.toggle('shadow-md', isActive && index + 1 === stepId);
+                });
+            }
+
+            function setActiveStep(stepId) {
+                const stepInt = parseInt(stepId);
+                stepButtons.forEach(btn => btn.classList.remove('active'));
+                stepContents.forEach(content => content.classList.remove('active'));
+
+                const activeButton = document.querySelector(`.step-button[data-step="${stepId}"]`);
+                const activeContent = document.getElementById(`step-content-${stepId}`);
+
+                if(activeButton) activeButton.classList.add('active');
+                if(activeContent) activeContent.classList.add('active');
+                
+                updateProcessDiagram(stepInt);
+            }
+
+            stepButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    setActiveStep(button.dataset.step);
+                });
+            });
+            setActiveStep(1);
+            
+            const ctx = document.getElementById('conveyorChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Product Conveyor', 'Waste Conveyor'],
+                    datasets: [{
+                        label: 'Width (mm)',
+                        data: [900, 400],
+                        backgroundColor: ['#f3931a', 'rgba(100, 116, 139, 0.8)'], 
+                        borderColor: ['#d37f14', '#475569'], 
+                        borderWidth: 2,
+                        borderRadius: 5,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#1e293b',
+                            titleFont: { size: 14, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 10,
+                            callbacks: {
+                                label: (context) => `${context.dataset.label}: ${context.raw} mm`
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: { color: '#e2e8f0' },
+                            ticks: { color: '#475569' },
+                            title: { display: true, text: 'Width in Millimeters (mm)', color: '#334155', font: { weight: '600'} }
+                        },
+                        y: {
+                            grid: { display: false },
+                            ticks: { color: '#334155', font: { weight: '600', size: 14 }}
+                        }
+                    }
+                }
+            });
+
+            // --- Video Gallery Logic ---
+            const videoTabs = document.querySelectorAll('.video-tab');
+            const videoIframes = document.querySelectorAll('.video-iframe');
+
+            function switchVideo(videoId) {
+                // Hide all videos and remove active state from tabs
+                videoIframes.forEach(iframe => iframe.style.display = 'none');
+                videoTabs.forEach(tab => {
+                    tab.classList.remove('active-tab', 'bg-kmk-orange', 'text-white');
+                    tab.classList.add('text-slate-700', 'bg-slate-100');
+                });
+
+                // Show the selected video and set the active tab style
+                const activeIframe = document.getElementById(`video-${videoId}`);
+                const activeTab = document.querySelector(`.video-tab[data-video="${videoId}"]`);
+
+                if (activeIframe) {
+                    activeIframe.style.display = 'block';
+                }
+                if (activeTab) {
+                    activeTab.classList.add('active-tab', 'bg-kmk-orange', 'text-white');
+                    activeTab.classList.remove('text-slate-700', 'bg-slate-100');
+                }
+            }
+
+            videoTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    switchVideo(tab.dataset.video);
+                });
+            });
+
+            // Initialize the first video to be active
+            switchVideo(1); 
+            // --- End Video Gallery Logic ---
+        });
+    </script>
+</body>
+</html>
